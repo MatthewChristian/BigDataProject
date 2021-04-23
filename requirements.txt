@@ -8,3 +8,4 @@ wordcloud==1.8.1
 imblearn==0.0
 nltk==3.6.2
 pynndescent==0.5.2
+bokeh==2.3.1
