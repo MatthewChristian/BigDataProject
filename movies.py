@@ -111,7 +111,7 @@ def movieRecommender():
             st.write(user_input, " is not an existing movie or movie loaded does not exist in the API.")
         
 def graphs():
-    st.sidebar.selectbox("Select Graph",("1","2"))        
+    st.sidebar.selectbox("Select Graph",("Budget & Revenue","2"))        
         
 def aboutUS():
     st.write("About us")
