@@ -61,7 +61,8 @@ from bokeh.palettes import Spectral10
 #df1 = pd.read_csv("cleaned_df1.csv")
 df1 = st.cache(pd.read_csv)("cleaned_df1.csv")
 #df2 = st.cache(pd.read_csv)("IMDBMovies.csv")
-df3 = st.cache(pd.read_csv)("MovieRecs.csv")
+df3 = st.cache(pd.read_csv)("MovieRecs2.csv")
+dfK = st.cache(pd.read_csv)("MovieRecsKNN.csv")
 page_selected = st.sidebar.selectbox("Select Page",("Home","Movie Recommender","About Us"))
 
 #start of main pages
@@ -76,8 +77,8 @@ def movieRecommender():
     st.title("Movie Recommender")
     """### This recommends movies based on shows of a similar genre."""
     """### Search"""
-    user_input = st.text_input("Enter a movie name....eg: Mad Max","")
-    st.write("Top movies similar to", user_input,":")
+    user_input = st.text_input("Enter a movie name....eg: Iron Man","")
+    st.write("### Top movies similar to", user_input,":")
 
     if(user_input != ""):
         try:
@@ -89,22 +90,59 @@ def movieRecommender():
                 
                 data = urllib.request.urlopen(url).read().decode()
                 obj = json.loads(data)
+                if (obj['Response'] == 'False'):
+                    st.write("#### ", top10_movie_names[i])
+                    st.write("Movie not found in API")
+                else:  
+                    id = obj['Search'][0]['imdbID']
+                    st.write("#### ", obj['Search'][0]['Title'])
+                    
+                    url_id = "http://www.omdbapi.com/?i="+id+"&apikey=5c8c455"
+                    data2 = urllib.request.urlopen(url_id).read().decode()
+                    obj2 = json.loads(data2)
+                    
+                    cols = st.beta_columns(7)
+                    cols[0].image(obj['Search'][0]['Poster'])
+                    
+                    cols[2].write(obj2['Year'])
+                    cols[3].write(obj2['Rated'])
+                    cols[4].write(obj2['Genre'])
+                    cols[5].write(obj2['imdbRating'])
+                    cols[6].write(obj2['Language'])
+            
+
+            row_data = dfK[dfK['Movie']==user_input.lower()]
+            top10_movie_names = row_data.iloc[0]
+            st.write("### Users who liked ", user_input," also liked: ")
+            for i in range(1,11):
+                movie_name = top10_movie_names[i].replace(" ", "_")
+                if movie_name == "0":
+                   st.write("#### This movie was not rated by other users in the dataset.")
+                   break
+                url = "http://www.omdbapi.com/?s="+movie_name+"&apikey=5c8c455"
                 
-                id = obj['Search'][0]['imdbID']
-                st.write(obj['Search'][0]['Title'])
-                
-                url_id = "http://www.omdbapi.com/?i="+id+"&apikey=5c8c455"
-                data2 = urllib.request.urlopen(url_id).read().decode()
-                obj2 = json.loads(data2)
-                
-                cols = st.beta_columns(7)
-                cols[0].image(obj['Search'][0]['Poster'])
-                
-                cols[2].write(obj2['Year'])
-                cols[3].write(obj2['Rated'])
-                cols[4].write(obj2['Genre'])
-                cols[5].write(obj2['imdbRating'])
-                cols[6].write(obj2['Language'])
+                data = urllib.request.urlopen(url).read().decode()
+                obj = json.loads(data)
+                if (obj['Response'] == 'False'):
+                    st.write("#### ", top10_movie_names[i])
+                    st.write("Movie not found in API")
+                else:  
+                    id = obj['Search'][0]['imdbID']
+                    st.write("#### ", obj['Search'][0]['Title'])
+                    
+                    url_id = "http://www.omdbapi.com/?i="+id+"&apikey=5c8c455"
+                    data2 = urllib.request.urlopen(url_id).read().decode()
+                    obj2 = json.loads(data2)
+                    
+                    cols = st.beta_columns(7)
+                    cols[0].image(obj['Search'][0]['Poster'])
+                    
+                    cols[2].write(obj2['Year'])
+                    cols[3].write(obj2['Rated'])
+                    cols[4].write(obj2['Genre'])
+                    cols[5].write(obj2['imdbRating'])
+                    cols[6].write(obj2['Language'])
+            
                 
         except:
             st.write(user_input, " is not an existing movie or movie loaded does not exist in the API.")
