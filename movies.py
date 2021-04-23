@@ -62,7 +62,7 @@ from bokeh.palettes import Spectral10
 df1 = st.cache(pd.read_csv)("cleaned_df1.csv")
 #df2 = st.cache(pd.read_csv)("IMDBMovies.csv")
 df3 = st.cache(pd.read_csv)("MovieRecs.csv")
-page_selected = st.sidebar.selectbox("Select Page",("Home","Movie Recommender","About Us"))
+page_selected = st.sidebar.selectbox("Select Page",("Home","Movie Recommender","Sample Graphs","About Us"))
 
 #start of main pages
 def homePage():
@@ -91,7 +91,8 @@ def movieRecommender():
                 obj = json.loads(data)
                 
                 id = obj['Search'][0]['imdbID']
-                st.write(obj['Search'][0]['Title'])
+                imbdLink = "https://www.imdb.com/title/"+str(id)
+                st.write(obj['Search'][0]['Title'],": ", imbdLink)
                 
                 url_id = "http://www.omdbapi.com/?i="+id+"&apikey=5c8c455"
                 data2 = urllib.request.urlopen(url_id).read().decode()
@@ -109,7 +110,8 @@ def movieRecommender():
         except:
             st.write(user_input, " is not an existing movie or movie loaded does not exist in the API.")
         
-        
+def graphs():
+    st.sidebar.selectbox("Select Graph",("1","2"))        
         
 def aboutUS():
     st.write("About us")
@@ -121,7 +123,8 @@ def selectedPage(page_selected):
         aboutUS()
     elif(page_selected == "Movie Recommender"):
         movieRecommender()
-
+    elif(page_selected == "Sample Graphs"):
+        graphs()
 
 selectedPage(page_selected)
 #end of main pages
