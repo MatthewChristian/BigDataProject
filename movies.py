@@ -63,7 +63,7 @@ df1 = st.cache(pd.read_csv)("cleaned_df1.csv")
 #df2 = st.cache(pd.read_csv)("IMDBMovies.csv")
 df3 = st.cache(pd.read_csv)("MovieRecs2.csv")
 dfK = st.cache(pd.read_csv)("MovieRecsKNN.csv")
-page_selected = st.sidebar.selectbox("Select Page",("Home","Movie Recommender","About Us","Related Graphs"))
+page_selected = st.sidebar.selectbox("Select Page",("Home","Movie Recommender","Related Graphs","About Us"))
 
 #start of main pages
 def homePage():
@@ -95,7 +95,8 @@ def movieRecommender():
                     st.write("Movie not found in API")
                 else:  
                     id = obj['Search'][0]['imdbID']
-                    st.write("#### ", obj['Search'][0]['Title'])
+                    imdburl= "https://www.imdb.com/title/"+id
+                    st.write("#### ", obj['Search'][0]['Title'],': ', imdburl)
                     
                     url_id = "http://www.omdbapi.com/?i="+id+"&apikey=5c8c455"
                     data2 = urllib.request.urlopen(url_id).read().decode()
@@ -128,7 +129,8 @@ def movieRecommender():
                     st.write("Movie not found in API")
                 else:  
                     id = obj['Search'][0]['imdbID']
-                    st.write("#### ", obj['Search'][0]['Title'])
+                    imdburl= "https://www.imdb.com/title/"+id
+                    st.write("#### ", obj['Search'][0]['Title'],": ",imdburl)
                     
                     url_id = "http://www.omdbapi.com/?i="+id+"&apikey=5c8c455"
                     data2 = urllib.request.urlopen(url_id).read().decode()
@@ -153,8 +155,8 @@ def aboutUS():
     st.write("About us")
 
 def relatedGraphs():
-    df1 = st.cache(pd.read_csv)("cleaned_df1.csv")
 
+    graph_selected = st.sidebar.selectbox("Select Graph",("Budget & Revenue","Profitability","Top Actors","Rating vs Popularity","Top Searched Keywords"))
 
     total_missing = df1.isnull().sum().sort_values(ascending=False)
     percent_missing = ((df1.isnull().sum() / df1.isnull().count()) * 100).sort_values(ascending=False)
@@ -172,126 +174,145 @@ def relatedGraphs():
                 '{:1.0f}'.format(p.get_width())) 
 
 
+    if graph_selected == "Budget & Revenue":
+        dfBudget = df1[['release_date', 'budget', 'revenue']].dropna()
+        dfBudget['release_date'] = pd.DatetimeIndex(dfBudget['release_date']).year
+        dfBudget['budget'] = dfBudget['budget'].astype(str).astype(int)
+        dfBudget['budget'] = dfBudget['budget'].apply(lambda x: round(x/1000000))
+        dfBudget['revenue'] = dfBudget['revenue'].apply(lambda x: round(x/1000000))
 
-    dfBudget = df1[['release_date', 'budget', 'revenue']].dropna()
-    dfBudget['release_date'] = pd.DatetimeIndex(dfBudget['release_date']).year
-    dfBudget['budget'] = dfBudget['budget'].astype(str).astype(int)
-    dfBudget['budget'] = dfBudget['budget'].apply(lambda x: round(x/1000000))
-    dfBudget['revenue'] = dfBudget['revenue'].apply(lambda x: round(x/1000000))
+        st.write("## Budget & Revenue by Year")
+        st.write("Shows scatter plots of budget & revenue by year side by side representing the years from 1880 to 2020")
+        plt.figure(figsize=(20,10))
+        plt.subplot(1, 2, 1)
+        plt.scatter(x = 'release_date' ,y = 'budget' , data = dfBudget)
+        plt.xlabel("Year")
+        plt.ylabel("Budget (Millions)")
+        plt.title("Budget by Year")
 
-
-    plt.figure(figsize=(20,10))
-    plt.subplot(1, 2, 1)
-    plt.scatter(x = 'release_date' ,y = 'budget' , data = dfBudget)
-    plt.xlabel("Year")
-    plt.ylabel("Budget (Millions)")
-    plt.title("Budget by Year")
-
-    plt.subplot(1, 2, 2)
-    plt.scatter(x = 'release_date' ,y = 'revenue' , data = dfBudget)
-    plt.xlabel("Year")
-    plt.ylabel("Revenue (Millions)")
-    plt.title("Revenue by Year")
-    plt.show()
-    st.pyplot(plt)
-
-
-
-    dfBudget = df1[['release_date', 'budget', 'revenue']].dropna()
-    dfBudget['release_date'] = pd.DatetimeIndex(dfBudget['release_date']).month
-    dfBudget['budget'] = dfBudget['budget'].astype(str).astype(int)
-    dfBudget['budget'] = dfBudget['budget'].apply(lambda x: round(x/1000000))
-    dfBudget['revenue'] = dfBudget['revenue'].apply(lambda x: round(x/1000000))
-    dfBudget = dfBudget.groupby('release_date')['budget', 'revenue'].mean()
-
-    plt.figure(figsize=(20,10))
-    plt.bar(dfBudget.index , dfBudget['budget'], label='budget', color= 'r')
-    plt.bar(dfBudget.index , dfBudget['revenue'], label='revenue', alpha = 0.4, color= 'b')
-    plt.xlabel("Month")
-    plt.ylabel("Budget / Revenue (Millions)")
-    plt.title("Budget/Revenue by Month")
-    plt.legend(loc='best')
-    plt.show()
-    st.pyplot(plt)
+        plt.subplot(1, 2, 2)
+        plt.scatter(x = 'release_date' ,y = 'revenue' , data = dfBudget)
+        plt.xlabel("Year")
+        plt.ylabel("Revenue (Millions)")
+        plt.title("Revenue by Year")
+        plt.show()
+        st.pyplot(plt)
 
 
-    dfProfit = df1[['original_title', 'budget', 'revenue']].dropna()
-    dfProfit['budget'] = dfProfit['budget'].astype(str).astype(int)
-    dfProfit['revenue'] = dfProfit['revenue'].astype(int)
-    #Remove rows where the budget or revenue is zero because they would not provide a fair comparison
-    dfProfit = dfProfit[dfProfit.revenue != 0]
-    dfProfit = dfProfit[dfProfit.budget != 0]
-    dfProfit['profit'] = dfProfit.apply(lambda row: int(row['revenue']) - row['budget'], axis=1)
 
-    plt.figure(figsize=(20,10))
-    sns.set_style('whitegrid')
-    plt.subplot(1, 2, 1)
-    ax = sns.barplot(y='original_title', x='profit', data=dfProfit.sort_values('profit', ascending=False)[:20], palette="cubehelix") 
-    ax.set_title('Top 20 Movies (Best profitability)')
-    ax.set_xlabel("Profit (Billion)")
-    ax.set_ylabel('Name')
+        dfBudget = df1[['release_date', 'budget', 'revenue']].dropna()
+        dfBudget['release_date'] = pd.DatetimeIndex(dfBudget['release_date']).month
+        dfBudget['budget'] = dfBudget['budget'].astype(str).astype(int)
+        dfBudget['budget'] = dfBudget['budget'].apply(lambda x: round(x/1000000))
+        dfBudget['revenue'] = dfBudget['revenue'].apply(lambda x: round(x/1000000))
+        dfBudget = dfBudget.groupby('release_date')['budget', 'revenue'].mean()
 
-    plt.subplot(1, 2, 2)
-    ax = sns.barplot(y='original_title', x='profit', data=dfProfit.sort_values('profit')[:20], palette="cubehelix") 
-    ax.set_title('Top 20 Movies (Worst profitability)')
-    ax.set_xlabel("Profit (Billion)")
-    ax.set_ylabel('Name')
-    plt.subplots_adjust(wspace=0.7)
-    plt.show()
-    st.pyplot(plt)
+        st.write("""## Budget & Average Revenue in Millions per Month""")
+        st.write("Shows graph of the budget of movies and their average revenue per month each year")
+        plt.figure(figsize=(20,10))
+        plt.bar(dfBudget.index , dfBudget['budget'], label='budget', color= 'r')
+        plt.bar(dfBudget.index , dfBudget['revenue'], label='revenue', alpha = 0.4, color= 'b')
+        plt.xlabel("Month")
+        plt.ylabel("Budget / Revenue (Millions)")
+        plt.title("Budget/Revenue by Month")
+        plt.legend(loc='best')
+        plt.show()
+        st.pyplot(plt)
+
+    if graph_selected == "Profitability":
+        st.title("Movie Profitability")
+        st.write("Shows the 20 highest and lowest profitable movies in billions of USD.")
+        dfProfit = df1[['original_title', 'budget', 'revenue']].dropna()
+        dfProfit['budget'] = dfProfit['budget'].astype(str).astype(int)
+        dfProfit['revenue'] = dfProfit['revenue'].astype(int)
+        #Remove rows where the budget or revenue is zero because they would not provide a fair comparison
+        dfProfit = dfProfit[dfProfit.revenue != 0]
+        dfProfit = dfProfit[dfProfit.budget != 0]
+        dfProfit['profit'] = dfProfit.apply(lambda row: int(row['revenue']) - row['budget'], axis=1)
+
+        plt.figure(figsize=(20,10))
+        sns.set_style('whitegrid')
+        plt.subplot(1, 2, 1)
+        ax = sns.barplot(y='original_title', x='profit', data=dfProfit.sort_values('profit', ascending=False)[:20], palette="cubehelix") 
+        ax.set_title('Top 20 Movies (Best profitability)')
+        ax.set_xlabel("Profit (Billion)")
+        ax.set_ylabel('Name')
+
+        plt.subplot(1, 2, 2)
+        ax = sns.barplot(y='original_title', x='profit', data=dfProfit.sort_values('profit')[:20], palette="cubehelix") 
+        ax.set_title('Top 20 Movies (Worst profitability)')
+        ax.set_xlabel("Profit (Billion)")
+        ax.set_ylabel('Name')
+        plt.subplots_adjust(wspace=0.7)
+        plt.show()
+        st.pyplot(plt)
+
+    if graph_selected == "Top Actors":
+
+        dfBudget = df1[['release_date', 'budget', 'revenue']].dropna()
+        dfBudget['release_date'] = pd.DatetimeIndex(dfBudget['release_date']).month
+        dfBudget['budget'] = dfBudget['budget'].astype(str).astype(int)
+        dfBudget['budget'] = dfBudget['budget'].apply(lambda x: round(x/1000000))
+        dfBudget['revenue'] = dfBudget['revenue'].apply(lambda x: round(x/1000000))
+        dfBudget = dfBudget.groupby('release_date')['budget', 'revenue'].mean()
+        dfYear = df1[['release_date']].dropna()
+        dfYear['release_date'] = pd.DatetimeIndex(dfYear['release_date']).year
+        dfBudget = dfBudget.groupby('release_date')['budget', 'revenue'].mean()
+        dfYear = dfYear.groupby('release_date')['release_date'].count().reset_index(name="count")
+
+        plt.figure(figsize=(20,10))
+        sns.set_style('whitegrid')
+        ax = sns.lineplot(x='release_date', y='count', data=dfYear) 
+        ax.set_title('Movies Per Year')
+        ax.set_xlabel("Year")
+        ax.set_ylabel('Number of Movies')
 
 
-    dfYear = df1[['release_date']].dropna()
-    dfYear['release_date'] = pd.DatetimeIndex(dfYear['release_date']).year
-    dfdfBudget = dfBudget.groupby('release_date')['budget', 'revenue'].mean()
-    dfYear = dfYear.groupby('release_date')['release_date'].count().reset_index(name="count")
+        dfCast = df1[['cast']].dropna()
+        dfCast = dfCast[dfCast['cast'].map(lambda x: len(x)) > 0]
 
-    plt.figure(figsize=(20,10))
-    sns.set_style('whitegrid')
-    ax = sns.lineplot(x='release_date', y='count', data=dfYear) 
-    ax.set_title('Movies Per Year')
-    ax.set_xlabel("Year")
-    ax.set_ylabel('Number of Movies')
+        dfCast= pd.Series([x for item in dfCast.cast for x in item]).value_counts().reset_index()
+        dfCast.columns = ['actor', 'count']
+        st.title("Top 20 Actors")
+        st.write("Plots the top 20 actors and the number of movies they have had some kind of activity in.")
 
+        plt.figure(figsize=(20,10))
+        sns.set_style('whitegrid')
+        ax = sns.barplot(y='actor', x='count', data=dfCast.sort_values('count', ascending=False)[:20], palette="cubehelix") 
+        ax.set_title('Top 20 Actors')
+        ax.set_xlabel("Number of Movies")
+        ax.set_ylabel('Actor')
 
-    dfCast = df1[['cast']].dropna()
-    dfCast = dfCast[dfCast['cast'].map(lambda x: len(x)) > 0]
+        for p in ax.patches:
+            plt.text(p.get_width()+1, p.get_y()+0.65*p.get_height(),
+                    '{:1.0f}'.format(p.get_width()))
 
-    dfCast= pd.Series([x for item in dfCast.cast for x in item]).value_counts().reset_index()
-    dfCast.columns = ['actor', 'count']
+        st.pyplot(plt)
 
-    plt.figure(figsize=(20,10))
-    sns.set_style('whitegrid')
-    ax = sns.barplot(y='actor', x='count', data=dfCast.sort_values('count', ascending=False)[:20], palette="cubehelix") 
-    ax.set_title('Top 20 Actors')
-    ax.set_xlabel("Number of Movies")
-    ax.set_ylabel('Actor')
+    if graph_selected == "Rating vs Popularity":
+        """# Rating vs Popularity"""
+        st.write("Determines if popularity affects whether a rating is high or low.")
+        dfPopRating = df1[['popularity', 'vote_average']].dropna()
+        dfPopRating['popularity'] = dfPopRating['popularity'].astype(float)
+        plt.figure(figsize=(20,10))
+        ax = sns.scatterplot(x = 'popularity' ,y = 'vote_average' , data = dfPopRating)
+        ax.set_title('Rating vs Popularity')
+        ax.set_xlabel("Popularity")
+        ax.set_ylabel("Rating")
+        st.pyplot(plt)
 
-    for p in ax.patches:
-        plt.text(p.get_width()+1, p.get_y()+0.65*p.get_height(),
-                '{:1.0f}'.format(p.get_width()))
-
-    st.pyplot(plt)
-
-
-    dfPopRating = df1[['popularity', 'vote_average']].dropna()
-    dfPopRating['popularity'] = dfPopRating['popularity'].astype(float)
-    plt.figure(figsize=(20,10))
-    ax = sns.scatterplot(x = 'popularity' ,y = 'vote_average' , data = dfPopRating)
-    ax.set_title('Rating vs Popularity')
-    ax.set_xlabel("Popularity")
-    ax.set_ylabel("Rating")
-    st.pyplot(plt)
-
-    dfOverView = df1[['overview']]
-    text = ' '.join(dfOverView['overview'].fillna('').values)
-    wordcloud = WordCloud(margin=10, background_color='white', colormap='Blues', width=1200, height=1000).generate(text)
-    plt.figure(figsize = (10, 10))
-    plt.imshow(wordcloud, interpolation='bilinear')
-    plt.title('Top words in overview', fontsize=20)
-    plt.axis('off')
-    plt.show()
-    st.pyplot(plt)
+    if graph_selected == "Top Searched Keywords":
+        st.title("Top Searched Keywords")
+        st.write("Shows a wordcloud of some top searched keywords when looking for movies.")
+        dfOverView = df1[['overview']]
+        text = ' '.join(dfOverView['overview'].fillna('').values)
+        wordcloud = WordCloud(margin=10, background_color='white', colormap='Blues', width=1200, height=1000).generate(text)
+        plt.figure(figsize = (10, 10))
+        plt.imshow(wordcloud, interpolation='bilinear')
+        plt.title('Top words in overview', fontsize=20)
+        plt.axis('off')
+        plt.show()
+        st.pyplot(plt)
 
 def selectedPage(page_selected):
     if(page_selected == "Home"):
