@@ -2,9 +2,13 @@
 
 ## Group Members
 Seth Timothy - 816014924
+
 Matthew Christian - 816015078
+
 Christopher Joseph - 816011233
+
 Dexter Singh - 816009215
+
 John Bachew - 810003511
 
 Start with Group_D_KaggleMovies_Recommender.ipynb
